@@ -19,9 +19,9 @@ void setup() {
 void loop() {  
 
   Serial.println("starting");
-  for(pan_pos = 0; pan_pos <= 90; pan_pos += 1){
+  for(pan_pos = 0; pan_pos <= 45; pan_pos += 1){
    
-    for(tilt_pos = 70; tilt_pos < 71; tilt_pos +=1){  
+    for(tilt_pos = 60; tilt_pos < 61; tilt_pos +=1){  
        Serial.print("tilt ");
        Serial.println(tilt_pos);
        sensorValue = analogRead(analogInPin);

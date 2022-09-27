@@ -5,7 +5,7 @@ Servo tilt_servo;
 
 const int analogInPin = A4;  // Analog input pin that the potentiometer is attached to
 int pan_pos = 0;
-int tilt_pos = 10;
+int tilt_pos = 30;
 
 int sensorValue = 0;        // value read from the pot
 
@@ -16,11 +16,13 @@ void setup() {
   Serial.begin(9600);
 }
 
-void loop() {  
-
+void loop() {
+  // set servos to initial position  
+  pan_servo.write(pan_pos);
+  tilt_servo.write(tilt_pos);
   Serial.println("starting");
   for(pan_pos = 0; pan_pos <= 45; pan_pos += 1){
-    for(tilt_pos = 30; tilt_pos < 90; tilt_pos +=1){  
+    for(tilt_pos = 30; tilt_pos < 100; tilt_pos +=1){  
        Serial.print("tilt ");
        Serial.println(tilt_pos);
        sensorValue = analogRead(analogInPin);
@@ -33,5 +35,4 @@ void loop() {
     pan_servo.write(pan_pos);
     delay(40);
   }
-  
 }

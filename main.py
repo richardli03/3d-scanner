@@ -2,17 +2,20 @@
 Runs the main pipeline of our 3D visualizer system
 """
 
+import math
 import serial
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import math
 
 # Define a few constants to streamline workflow
-USING_SENSOR = True  # So there aren't errors if we just want to simulate data
+USING_SENSOR = False  # So there aren't errors if we just want to simulate data
+IR_SENSOR_PORT = "/dev/ttyACM1" # the port that the arduino is plugged into
+BAUD_RATE = 9600
+
 DISPLAY = True  # Show the plot with the visualization of the data
 CALCULATE = True  # Calculate the actual distance associated with the sensor readings
-LOGGING = False  # Save the data to some file for future visualization
+LOGGING = True  # Save the data to some file for future visualization
 
 
 def visualize(path):
@@ -27,18 +30,22 @@ def visualize(path):
     Returns:
         Nothing, but visualizes the plot
     """
-    display = pd.read_csv(path)
+    display = pd.read_csv(f"{path}.csv")
     display = display.iloc[:, 1:]
     display = display.to_numpy()
+    
+    # normalize colors to map them.
     normalized_colors = display[2]/np.linalg.norm(display[2])
 
     fig = plt.figure()
+    # to prevent stretching
     plt.axis("equal")
+
+    # negate x values because we scanned right -> left
     plt.scatter(x=-display[0], y=display[1], cmap="Greys", c=normalized_colors)
-    plt.savefig('K.png', dpi='figure')
+    plt.savefig('K_panning.png', dpi='figure')
     fig.tight_layout()
     plt.show()
-
 
 def calculate(path):
     """
@@ -51,43 +58,41 @@ def calculate(path):
       True once completed
 
     """
-
-    database = pd.read_csv(path)
+    new_distances = []
+    database = pd.read_csv(f"{path}.csv")
     database = database.iloc[:, 1:]
     database = database.to_numpy()
     for distance in database[2]:
         distance = calculate_real_distance(distance)
+        new_distances.append(distance) 
+    database[2] = new_distances    
     pd.DataFrame(database).to_csv(f"{path}_calculations.csv")
     return True
 
-
 def calculate_real_distance(ir_reading):
     """
-    Given some reading from the IR sensor, plug it into the calibration curve to translate that
-    to a real distance.
+    Given some reading from the IR sensor, plug it into the calibration
+    curve to translate that to a real distance.
 
     Args:
-        ir_reading (int): the raw number that the ir sensor spits out. 
+        ir_reading (int): the raw number that the ir sensor spits out.
     """
+    # We want to account for this case because ln(0) returns an error
     if ir_reading == 0:
         return 0.0
-
     distance = (math.log(ir_reading/780))/-0.0253
     return distance
-
 
 def main():
     """
     Run the main pipeline of the sensor visualization.
     """
     if USING_SENSOR:
-        IR_SENSOR_PORT = "/dev/ttyACM1"
-        BAUD_RATE = 9600
         serial_port = serial.Serial(IR_SENSOR_PORT, BAUD_RATE, timeout=1)
 
     # Corresponding with degrees. Set based upon arduino settings
     tilt_range = 1
-    pan_range = 90
+    pan_range = 45
 
     # X for pan degree, Y for tilt degree, S for raw sensor reading
     display = pd.DataFrame(index=["X", "Y", "S"],
@@ -132,10 +137,10 @@ def main():
         step += 1
 
     # Define a filename to log to
-    path = "display.csv"
+    path = "display_panning"
 
     if LOGGING:
-        display.to_csv(path)
+        display.to_csv(f"{path}.csv")
 
     if DISPLAY:
         visualize(path)
@@ -146,3 +151,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
